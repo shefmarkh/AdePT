@@ -7,7 +7,7 @@
 
 // kernel function that generates the 'shower'
 __global__
-void shower(int n, float *particle_energy, float *totalEnergyLoss, int *numberOfSecondaries, float *x)
+void shower(int n, float *particle_energy, float *totalEnergyLoss, int *numberOfSecondaries)
  {
  float r;
  curandState state;
@@ -22,15 +22,14 @@ void shower(int n, float *particle_energy, float *totalEnergyLoss, int *numberOf
    while (particle_energy[n]>0)
     {
      r = curand_uniform(&state);
-     x[n] = r;
 
- if (r < 0.5f)
+    if (r < 0.5f)
       {
        float eloss = 0.2f * particle_energy[n];
        *totalEnergyLoss += (eloss < 0.001f ? particle_energy[n] : eloss);
        particle_energy[n] = (eloss < 0.001f ? 0.0f : (particle_energy[n] - eloss));
       }
- else 
+    else 
      {
       float eloss = 0.5f * particle_energy[n];
 
@@ -64,14 +63,6 @@ int main()
  cudaMallocManaged(&totalEnergyLoss, sizeof(float));
  cudaMallocManaged(&numberOfSecondaries, sizeof(int));
 
-/////
-  float *x, *y;
-
-  // Allocate Unified Memory accessible from CPU or GPU
-  cudaMallocManaged(&x, N*sizeof(float));
-  cudaMallocManaged(&y, N*sizeof(float));
-/////
-
  *totalEnergyLoss = 0;
  *numberOfSecondaries = 0;
 
@@ -83,19 +74,13 @@ int main()
 
   int n_particles = 100;
 
-  // Run kernel on 100 particles on the GPU
-  shower<<<1, 1>>>(n_particles, particle_energy, totalEnergyLoss, numberOfSecondaries, x);
+  // Run kernel on n_particles on the GPU
+  shower<<<1, 1>>>(n_particles, particle_energy, totalEnergyLoss, numberOfSecondaries);
 
   // Wait for GPU to finish before accessing on host
   cudaDeviceSynchronize();
 
-  // check
-  for (int i = 0; i < n_particles; i++)
-  {
-    std::cout << "number " << i << " is " << x[i] << std::endl;
-  }
- 
- std::cout << "Total energy loss " << *totalEnergyLoss << " number of secondaries " << *numberOfSecondaries << std::endl;
+  std::cout << "Total energy loss " << *totalEnergyLoss << " number of secondaries " << *numberOfSecondaries << std::endl;
 
   // Free memory
   cudaFree(particle_energy);
