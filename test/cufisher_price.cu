@@ -7,9 +7,13 @@
 
 // kernel function that generates the 'shower'
 __global__
-void shower(int n, float *particle_energy, float *totalEnergyLoss, int *numberOfSecondaries)
- {
+void shower(int m, float *particle_energy, float *totalEnergyLoss, int *numberOfSecondaries)
+{
+
+ int n = m;
+
  float r;
+
  curandState state;
 
  curand_init(0, /* the seed controls the sequence of random values that are produced */
@@ -23,7 +27,7 @@ void shower(int n, float *particle_energy, float *totalEnergyLoss, int *numberOf
     {
      r = curand_uniform(&state);
 
-    if (r < 0.5f)
+     if (r < 0.5f)
       {
        float eloss = 0.2f * particle_energy[n];
        *totalEnergyLoss += (eloss < 0.001f ? particle_energy[n] : eloss);
@@ -34,19 +38,17 @@ void shower(int n, float *particle_energy, float *totalEnergyLoss, int *numberOf
       float eloss = 0.5f * particle_energy[n];
 
       particle_energy[n] -= eloss;
-      //
+
       // here I need to create a new particle
-      //
       
       n++;
       particle_energy[n] = eloss;
       (*numberOfSecondaries)++;
-
      }
-    }
-    n--;
-  }
- } 
+   }
+  n--;
+ }
+} 
 
 //////// 
 
@@ -73,6 +75,8 @@ int main()
    }
 
   int n_particles = 100;
+
+  cudaDeviceSynchronize();
 
   // Run kernel on n_particles on the GPU
   shower<<<1, 1>>>(n_particles, particle_energy, totalEnergyLoss, numberOfSecondaries);
