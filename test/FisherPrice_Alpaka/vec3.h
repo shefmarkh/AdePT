@@ -13,6 +13,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <iostream>
+#include <alpaka/alpaka.hpp>
 
 class vec3 {
 public:
