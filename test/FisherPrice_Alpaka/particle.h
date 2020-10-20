@@ -26,7 +26,8 @@ public:
   /** @brief Constructor which sets the position 3-vector, momentum 3-vector and type.
    * Takes a @sa vec3 position and momentum and a char type as arguments.
    */
-  ALPAKA_FN_HOST_ACC particle(vecgeom::VECGEOM_IMPL_NAMESPACE::Vector3D<float>  pos, vecgeom::VECGEOM_IMPL_NAMESPACE::Vector3D<float>  mom, char ptype)
+  ALPAKA_FN_HOST_ACC particle(vecgeom::VECGEOM_IMPL_NAMESPACE::Vector3D<float> pos,
+                              vecgeom::VECGEOM_IMPL_NAMESPACE::Vector3D<float> mom, char ptype)
   {
     m_pos   = pos;
     m_mom   = mom;
@@ -38,19 +39,18 @@ public:
    */
   ALPAKA_FN_ACC float momentum() const { return m_mom.Perp(); }
 
-  ALPAKA_FN_ACC vecgeom::VECGEOM_IMPL_NAMESPACE::Vector3D<float>  getPos() const { return m_pos; }
-  ALPAKA_FN_ACC vecgeom::VECGEOM_IMPL_NAMESPACE::Vector3D<float>  getMom() const { return m_mom; }
+  ALPAKA_FN_ACC vecgeom::VECGEOM_IMPL_NAMESPACE::Vector3D<float> getPos() const { return m_pos; }
+  ALPAKA_FN_ACC vecgeom::VECGEOM_IMPL_NAMESPACE::Vector3D<float> getMom() const { return m_mom; }
   ALPAKA_FN_ACC char getPType() const { return m_ptype; }
 
-  ALPAKA_FN_ACC void setPos(const vecgeom::VECGEOM_IMPL_NAMESPACE::Vector3D<float>  &pos) { m_pos = pos; }
-  ALPAKA_FN_ACC void setMom(const vecgeom::VECGEOM_IMPL_NAMESPACE::Vector3D<float>  &mom) { m_mom = mom; }
+  ALPAKA_FN_ACC void setPos(const vecgeom::VECGEOM_IMPL_NAMESPACE::Vector3D<float> &pos) { m_pos = pos; }
+  ALPAKA_FN_ACC void setMom(const vecgeom::VECGEOM_IMPL_NAMESPACE::Vector3D<float> &mom) { m_mom = mom; }
   ALPAKA_FN_ACC void setPType(const char &ptype) { m_ptype = ptype; }
 
 private:
-  vecgeom::VECGEOM_IMPL_NAMESPACE::Vector3D<float>  m_pos;   ///< position x, y, z in mm
-  vecgeom::VECGEOM_IMPL_NAMESPACE::Vector3D<float>  m_mom;   ///< momentum px, py, pz in MeV
-  char m_ptype; ///< type (should be an enum) 22 = gamma, 11=e-, -11=e+
-
+  vecgeom::VECGEOM_IMPL_NAMESPACE::Vector3D<float> m_pos; ///< position x, y, z in mm
+  vecgeom::VECGEOM_IMPL_NAMESPACE::Vector3D<float> m_mom; ///< momentum px, py, pz in MeV
+  char m_ptype;                                           ///< type (should be an enum) 22 = gamma, 11=e-, -11=e+
 };
 
 #endif // PART_H
