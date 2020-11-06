@@ -1,6 +1,8 @@
 # SPDX-FileCopyrightText: 2020 CERN
 # SPDX-License-Identifier: Apache-2.0
 
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -rdc=true ")
+
 #We must specify that we want to use alpaka
 find_package(alpaka QUIET)
 
@@ -11,7 +13,9 @@ else()
   alpaka_add_executable(FisherPriceAlpaka alpaka_fisher_price.cu)
   target_link_libraries(FisherPriceAlpaka PUBLIC alpaka::alpaka)
 
-  alpaka_add_executable(unitTests_FisherPriceAlpaka unitTests_alpaka_fisher_price.cu)
-  target_link_libraries(unitTests_FisherPriceAlpaka PUBLIC alpaka::alpaka)
+  #add_executable(FisherPriceCuda cuda_fisher_price.cu)  
+
+  #alpaka_add_executable(unitTests_FisherPriceAlpaka unitTests_alpaka_fisher_price.cu)
+  #target_link_libraries(unitTests_FisherPriceAlpaka PUBLIC alpaka::alpaka)
 endif()
 

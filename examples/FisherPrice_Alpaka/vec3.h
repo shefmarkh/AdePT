@@ -14,15 +14,27 @@
 #include <stdlib.h>
 #include <iostream>
 
+#define ALPAKA_ON
+
 class vec3 {
 public:
   /** @brief nominal constructor */
-  ALPAKA_FN_ACC vec3() {}
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__
+  #endif
+  vec3() {}
 
   /** @brief constructor which sets the 3 components of the vector.
    * e0, e1 and e2 are the components of a 3-vector
    */
-  ALPAKA_FN_ACC vec3(float e0, float e1, float e2)
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__ __host__
+  #endif
+  vec3(float e0, float e1, float e2)
   {
     m_e[0] = e0;
     m_e[1] = e1;
@@ -30,40 +42,85 @@ public:
   }
 
   /** @brief returns the stored first component of the 3-vector */
-  ALPAKA_FN_ACC inline float x() const { return m_e[0]; }
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__
+  #endif
+  inline float x() const { return m_e[0]; }
 
   /** @brief returns the stored second component of the 3-vector */
-  ALPAKA_FN_ACC inline float y() const { return m_e[1]; }
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__
+  #endif
+  inline float y() const { return m_e[1]; }
 
   /** @brief returns the stored third component of the 3-vector */
-  ALPAKA_FN_ACC inline float z() const { return m_e[2]; }
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__ __host__
+  #endif
+  inline float z() const { return m_e[2]; }
 
   /** @brief returns reference to this vector */
-  ALPAKA_FN_ACC inline const vec3 &operator+() const { return *this; }
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__
+  #endif
+  inline const vec3 &operator+() const { return *this; }
 
   /** @brief returns reference to this vector, after adding an other vector to it.
    * v2 is the vector to be added to this vecor.
    * */
-  ALPAKA_FN_ACC inline vec3 &operator+=(const vec3 &v2);
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__
+  #endif
+  inline vec3 &operator+=(const vec3 &v2);
 
   /** @brief returns reference to this vector, after multiplying it by a value.
    * t is the value to multiple this vector by.
    * */
-  ALPAKA_FN_ACC inline vec3 &operator*=(const float t);
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__
+  #endif
+  inline vec3 &operator*=(const float t);
 
   /** @brief returns the magnitude of the vector */
-  ALPAKA_FN_ACC inline float length() const { return sqrt(m_e[0] * m_e[0] + m_e[1] * m_e[1] + m_e[2] * m_e[2]); }
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__
+  #endif
+  inline float length() const { return sqrt(m_e[0] * m_e[0] + m_e[1] * m_e[1] + m_e[2] * m_e[2]); }
 
   /** @brief reduces this vector by the energy a particle loses
    * en is the energy lost.
    * Each component of the vector is reduced by en * 1/magnitude * component.
    */
-  ALPAKA_FN_ACC inline void energyLoss(float en);
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__
+  #endif
+  inline void energyLoss(float en);
 
   /** @brief scale each component of the vector by a value.
    * scale is the value to scale each component by
    */
-  ALPAKA_FN_ACC inline void scaleLength(float scale)
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__
+  #endif
+  inline void scaleLength(float scale)
   {
     m_e[0] *= scale;
     m_e[1] *= scale;
@@ -82,7 +139,12 @@ inline std::ostream &operator<<(std::ostream &os, const vec3 &t)
   return os;
 }
 
-ALPAKA_FN_ACC inline void vec3::energyLoss(float en)
+#ifdef ALPAKA_ON
+ALPAKA_FN_HOST_ACC
+#else
+__device__
+#endif
+inline void vec3::energyLoss(float en)
 {
   float k = 1 / sqrt(m_e[0] * m_e[0] + m_e[1] * m_e[1] + m_e[2] * m_e[2]);
   m_e[0]  = m_e[0] - en * k * m_e[0];
@@ -94,7 +156,12 @@ ALPAKA_FN_ACC inline void vec3::energyLoss(float en)
  * v1 and v2 are the vec3 to add.
  * returns the sum of the two vectors v1 and v2.
  */
-ALPAKA_FN_ACC inline vec3 operator+(const vec3 &v1, const vec3 &v2)
+#ifdef ALPAKA_ON
+ALPAKA_FN_HOST_ACC
+#else
+__device__
+#endif
+inline vec3 operator+(const vec3 &v1, const vec3 &v2)
 {
   return vec3(v1.m_e[0] + v2.m_e[0], v1.m_e[1] + v2.m_e[1], v1.m_e[2] + v2.m_e[2]);
 }
@@ -103,7 +170,12 @@ ALPAKA_FN_ACC inline vec3 operator+(const vec3 &v1, const vec3 &v2)
  * t is the value to multiply a 3-vector v by.
  * returns a new vector, which is the result of the operation.
  */
-ALPAKA_FN_ACC inline vec3 operator*(float t, const vec3 &v)
+#ifdef ALPAKA_ON
+ALPAKA_FN_HOST_ACC
+#else
+__device__
+#endif
+inline vec3 operator*(float t, const vec3 &v)
 {
   return vec3(t * v.m_e[0], t * v.m_e[1], t * v.m_e[2]);
 }
@@ -112,12 +184,22 @@ ALPAKA_FN_ACC inline vec3 operator*(float t, const vec3 &v)
  * t is the value to multiply a 3-vector v by.
  * returns a new vector, which is the result of the operation.
  */
-ALPAKA_FN_ACC inline vec3 operator*(const vec3 &v, float t)
+#ifdef ALPAKA_ON
+ALPAKA_FN_HOST_ACC
+#else
+__device__
+#endif
+inline vec3 operator*(const vec3 &v, float t)
 {
   return vec3(t * v.m_e[0], t * v.m_e[1], t * v.m_e[2]);
 }
 
-ALPAKA_FN_ACC inline vec3 &vec3::operator+=(const vec3 &v)
+#ifdef ALPAKA_ON
+ALPAKA_FN_HOST_ACC
+#else
+__device__
+#endif
+inline vec3 &vec3::operator+=(const vec3 &v)
 {
   m_e[0] += v.m_e[0];
   m_e[1] += v.m_e[1];
@@ -125,7 +207,12 @@ ALPAKA_FN_ACC inline vec3 &vec3::operator+=(const vec3 &v)
   return *this;
 }
 
-ALPAKA_FN_ACC inline vec3 &vec3::operator*=(const float t)
+#ifdef ALPAKA_ON
+ALPAKA_FN_HOST_ACC
+#else
+__device__
+#endif
+inline vec3 &vec3::operator*=(const float t)
 {
   m_e[0] *= t;
   m_e[1] *= t;

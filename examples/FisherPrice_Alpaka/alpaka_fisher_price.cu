@@ -8,6 +8,7 @@
 
 #include "particleProcessor.h"
 
+
 // This processes one event on the device. A list of particles is passed through
 // For each particle we call process(*partList, iTh)
 // process will then work the same was as in the C++ version
@@ -27,7 +28,7 @@ struct processEvent {
 
     // Here we split threads that start immediatly, from threads that will have to wait until the shower is under way
     particleProcessor particleProcessor;
-    int ns     = particleProcessor.processParticle(acc, partList, iTh, generator, SD);
+    int ns     = particleProcessor.processParticle<Acc>(acc, partList, iTh, generator, SD);
     steps[iTh] = ns;
   }
 };
@@ -40,8 +41,10 @@ int main()
   using Dim = dim::DimInt<1>;
   using Idx = uint32_t;
 
+
   // Define the alpaka accelerator to be Nvidia GPU
   using Acc = acc::AccGpuCudaRt<Dim, Idx>;
+  //using Acc = acc::AccCpuThreads<Dim, Idx>;
 
   // Get the first device available of type GPU (i.e should be our sole GPU)/device
   auto const device = pltf::getDevByIdx<Acc>(0u);

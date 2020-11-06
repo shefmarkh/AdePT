@@ -12,10 +12,17 @@
 
 #include "particle.h"
 
+#define ALPAKA_ON
+
 class sensitive {
 public:
   /** @brief nominal constructor sets the class data to default values */
-  ALPAKA_FN_ACC sensitive()
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__
+  #endif
+  sensitive()
   {
     m_zmin   = 0.0;
     m_zmax   = 1000.;
@@ -25,7 +32,12 @@ public:
   /** @brief constructor sets user supplied values of zmin and zmaz. m_totalE
    * is set to zero
    * */
-  ALPAKA_FN_ACC sensitive(float zmin, float zmax)
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__
+  #endif
+  sensitive(float zmin, float zmax)
   {
     m_zmin   = zmin;
     m_zmax   = zmax;
@@ -38,7 +50,12 @@ public:
   /** @brief add energy to the sensitive detector from a particle.
    * mypart is the particle being considered and E is its energy loss.
    */
-  ALPAKA_FN_ACC inline void add(const particle *mypart, float E)
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__
+  #endif
+  inline void add(const particle *mypart, float E)
   {
     if (mypart->getPos().z() > m_zmin && mypart->getPos().z() < m_zmax) m_totalE += E;
   }

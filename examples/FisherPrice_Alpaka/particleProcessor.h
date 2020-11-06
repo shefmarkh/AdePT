@@ -12,19 +12,32 @@
 #ifndef PARTICLEPROCESSOR_H
 #define PARTICLEPROCESSOR_H
 
+#include "randEng.h"
 #include "particle.h"
 #include "particleStack.h"
 #include "sensitive.h"
 #include <alpaka/alpaka.hpp>
 
+#define ALPAKA_ON
+
 class particleProcessor {
 
 public:
   /** @brief A minimal constructor */
-  ALPAKA_FN_ACC particleProcessor() { m_encourageSplit = false; }
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_ACC 
+  #else
+  __device__ 
+  #endif 
+  particleProcessor() { m_encourageSplit = false; }
 
   /** @brief A minimal destructor */
-  ALPAKA_FN_ACC ~particleProcessor() {}
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_ACC 
+  #else
+  __device__ 
+  #endif 
+   ~particleProcessor() {}
 
   /**
    * @brief calculates the energy loss of a particle, mypart, in the range 0 to 0.2 MeV in the direction of the
@@ -33,9 +46,13 @@ public:
    * initialised with a seed by the client. Returns a float value representing the energy lost, which is calculated as a
    * randum number (between zero and one) multiplied by 0.2 MeV.
    * */
-  template <typename Acc>
+  #ifdef ALPAKA_ON
+  template <typename Acc, typename Generator>
   ALPAKA_FN_ACC float energyLoss(Acc const &acc, particle &mypart,
-                                 alpaka::rand::generator::uniform_cuda_hip::Xor &generator);
+                                 Generator &generator);
+  #else
+  __device__  float energyLoss(particle& mypart, const randEng& re);
+  #endif
 
   /**
    * @brief Takes a list of particles on a specific thread and processes them. Processing means that the particles moves
@@ -46,9 +63,13 @@ public:
    * an instance of a c++ class, of type sensitive, representing a sensitive detector. Returns an unsigned integer
    * representing the number of steps undertaken.
    */
-  template <typename Acc>
+  #ifdef ALPAKA_ON
+  template <typename Acc, typename Generator>
   ALPAKA_FN_ACC unsigned int processParticle(Acc const &acc, particle *partList, const int &iTh,
-                                             alpaka::rand::generator::uniform_cuda_hip::Xor &generator, sensitive &SD);
+                                             Generator &generator, sensitive &SD);
+  #else
+  __device__ unsigned int processParticle(particle* partList, const int& iTh, const randEng& re, sensitive& SD);
+  #endif
 
   /**
    * @brief throws a random number to determine whether to generate secondary particles. An electron will always
@@ -58,9 +79,13 @@ public:
    * alpaka. Returns a new particle representing either the photon (in e -> gamma brehmstrahhlung case) or positron (in
    * the photon -> e+e- case). If we don't produce any additional particles 0 is returned.
    */
-  template <typename Acc>
+  #ifdef ALPAKA_ON
+  template <typename Acc, typename Generator>
   ALPAKA_FN_ACC particle *splitParticle(Acc const &acc, particle &mypart,
-                                        alpaka::rand::generator::uniform_cuda_hip::Xor &generator);
+                                        Generator &generator);
+  #else
+  __device__ particle* splitParticle(particle& mypart, const randEng& re);
+  #endif
 
   /**
    * @brief steps the particle 0.1 mm in the x-direction. Additionally determines how much energy it loses via @sa
@@ -70,15 +95,24 @@ public:
    * sensitive detector. Returns the output of @sa particleProcessor::splitParticle, which is a pointer to a c++ class
    * of type particle.
    */
-  template <typename Acc>
+  #ifdef ALPAKA_ON
+  template <typename Acc, typename Generator>
   ALPAKA_FN_ACC particle *step(Acc const &acc, particle &processPart,
-                               alpaka::rand::generator::uniform_cuda_hip::Xor &generator, sensitive &SD);
+                               Generator &generator, sensitive &SD);
+  #else
+  __device__ particle* step(particle& processPart, const randEng& re, sensitive& SD) ;
+  #endif
 
   /**
    * @brief If called this lowers the threshold used in @sa splitParticle from 0.99 to 0.5.
    * This is only to be done in unit tests in order to ensure all code paths are executed.
    */
-  ALPAKA_FN_ACC void lowerThreshold() { m_encourageSplit = true; }
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_ACC 
+  #else
+  __device__
+  #endif
+  void lowerThreshold() { m_encourageSplit = true; }
 
 private:
   /** Toggle to increase probablity of splitting when running unit tests, such that we ensure
@@ -89,23 +123,36 @@ private:
 
 #endif
 
-template <typename Acc>
+#ifdef ALPAKA_ON
+template <typename Acc, typename Generator>
 ALPAKA_FN_ACC float particleProcessor::energyLoss(Acc const &acc, particle &mypart,
-                                                  alpaka::rand::generator::uniform_cuda_hip::Xor &generator)
+                                                  Generator &generator)
+#else                                                  
+__device__ float particleProcessor::energyLoss(particle& mypart, const randEng& re)
+#endif
 {
   // take off a random 0 to 0.2 MeV in the direction of momentum
-  auto func(alpaka::rand::distribution::createUniformReal<float>(acc));
+  #ifdef ALPAKA_ON
+  auto func(alpaka::rand::distribution::createUniformReal<float>(acc));  
   float enLoss = 0.02 * func(generator);
+  #else
+  float enLoss= 0.02*re.Throw() ;
+  #endif
+
   vec3 theMom  = mypart.getMom();
   theMom.energyLoss(enLoss);
   mypart.setMom(theMom);
   return enLoss;
 }
 
-template <typename Acc>
+#ifdef ALPAKA_ON
+template <typename Acc, typename Generator>
 ALPAKA_FN_ACC unsigned int particleProcessor::processParticle(Acc const &acc, particle *partList, const int &iTh,
-                                                              alpaka::rand::generator::uniform_cuda_hip::Xor &generator,
+                                                              Generator &generator,
                                                               sensitive &SD)
+#else
+__device__ unsigned int particleProcessor::processParticle(particle* partList, const int& iTh, const randEng& re, sensitive& SD)
+#endif
 {
   // Create a particleStack for this thread:
   particleStack<100> PS;
@@ -121,7 +168,12 @@ ALPAKA_FN_ACC unsigned int particleProcessor::processParticle(Acc const &acc, pa
     PS.pop();
     do {
       nsteps++;
+      #ifdef ALPAKA_ON
       particle *newPart = this->step(acc, *processPart, generator, SD);
+      #else
+      particle* newPart=this->step(*processPart, re, SD);
+      #endif
+
       if (newPart) PS.push(newPart); // if a new particle is generated we add it to the stack
       if (PS.size() > maxsize) maxsize = PS.size();
     } while (processPart->momentum() > 1.);
@@ -136,22 +188,36 @@ ALPAKA_FN_ACC unsigned int particleProcessor::processParticle(Acc const &acc, pa
   return nsteps;
 }
 
-template <typename Acc>
+#ifdef ALPAKA_ON
+template <typename Acc, typename Generator>
 ALPAKA_FN_ACC particle *particleProcessor::splitParticle(Acc const &acc, particle &mypart,
-                                                         alpaka::rand::generator::uniform_cuda_hip::Xor &generator)
+                                                         Generator &generator)
+#else
+__device__ particle* particleProcessor::splitParticle(particle& mypart, const randEng& re)
+#endif
 {
   // throw a random number if >0.99 do a splitting (e.g. a Brem or pair production)
+  #ifdef ALPAKA_ON
   auto func(alpaka::rand::distribution::createUniformReal<float>(acc));
+  #endif
 
   float threshold = 0.99;
   if (m_encourageSplit) threshold = 0.5;
 
+  #ifdef ALPAKA_ON
   if (func(generator) > threshold) {
+  #else
+  if (re.Throw() > 0.99) {
+  #endif  
     // This is a dummy splitter. We do a process a->b+c
     // b will take fracb of momentum with fracb betweek 0.5 and 0.9
     // c will take fracc of the momentum with fracc between 0. and 1-fracb
     // fracb+fracc has to be < 1 !!
+    #ifdef ALPAKA_ON
     float fracb = func(generator) * 0.4 + 0.5; // number between 0.5 and 0.9
+    #else
+    float fracb=re.Throw()*0.4+0.5; // number between 0.5 and 0.9
+    #endif
     float fracc = 1 - fracb;
     if (fracb + fracc > 1.0) printf("ARGHHH I MADE A MISTAKE \n");
     // copy momentum and scale it
@@ -173,16 +239,25 @@ ALPAKA_FN_ACC particle *particleProcessor::splitParticle(Acc const &acc, particl
   return 0;
 }
 
-template <typename Acc>
+#ifdef ALPAKA_ON
+template <typename Acc, typename Generator>
 ALPAKA_FN_ACC particle *particleProcessor::step(Acc const &acc, particle &processPart,
-                                                alpaka::rand::generator::uniform_cuda_hip::Xor &generator,
+                                                Generator &generator,
                                                 sensitive &SD)
+#else
+__device__ particle* particleProcessor::step(particle& processPart, const randEng& re, sensitive& SD) 
+#endif
 {
   // Move the particle by a deltaX=0.1mm in the momentum direction
   float deltaX = 0.1;
   float mom    = processPart.momentum();
   processPart.setPos(processPart.getPos() + (deltaX / mom) * processPart.getMom());
+  #ifdef ALPAKA_ON
   float enLoss = this->energyLoss(acc, processPart, generator);
-
   return this->splitParticle(acc, processPart, generator); // randomly see if we split the particle
+  #else
+  float enLoss = this->energyLoss(processPart, re);
+  return this->splitParticle(processPart, re); // randomly see if we split the particle     
+  #endif
+
 }

@@ -14,6 +14,8 @@
 
 #include <alpaka/alpaka.hpp>
 
+#define ALPAKA_ON
+
 template <unsigned int ARRAYSIZE>
 class particleStack {
 private:
@@ -24,7 +26,12 @@ private:
 
 public:
   /** @brief constructor which sets all array elements to zero */
-  ALPAKA_FN_ACC particleStack()
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__
+  #endif
+  particleStack()
   {
     m_nPart = 0;
     for (int ii = 0; ii < ARRAYSIZE; ii++)
@@ -34,7 +41,12 @@ public:
   /** @brief check whether the number of particle currently stored is zero or not.
    * returns the result of the query as bool
    */
-  ALPAKA_FN_ACC bool empty()
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__
+  #endif
+  bool empty()
   {
     if (0 == m_nPart)
       return true;
@@ -46,10 +58,20 @@ public:
    * returns a pointer of type particle directly from the stored array m_stack.
    * @remark assumes the array m_stack is NOT empty.
    */
-  ALPAKA_FN_ACC particle *top() { return m_stack[m_nPart - 1]; }
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__
+  #endif
+  particle *top() { return m_stack[m_nPart - 1]; }
 
   /** @brief set the particle pointer stored at the end of the array to zero */
-  ALPAKA_FN_ACC void pop()
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__
+  #endif
+  void pop()
   {
     m_stack[m_nPart - 1] = 0;
     m_nPart--;
@@ -57,7 +79,12 @@ public:
 
   /** @brief add a particle to the array.
    * myPart is a pointer to a particle */
-  ALPAKA_FN_ACC void push(particle *myPart)
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__
+  #endif
+  void push(particle *myPart)
   {
     m_stack[m_nPart] = myPart;
     m_nPart++;
@@ -65,6 +92,11 @@ public:
 
   /** @brief gets the stored arrays size.
    * returns the stored integer m_nPart */
-  ALPAKA_FN_ACC int size() { return m_nPart; }
+  #ifdef ALPAKA_ON
+  ALPAKA_FN_HOST_ACC
+  #else
+  __device__
+  #endif
+  int size() { return m_nPart; }
 };
 #endif // PARTICLESTACK
